@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical AI Chatbot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="chatbot-container">
+    <div class="chat-header">Medical AI Chatbot</div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+      <input type="text" id="userInput" placeholder="Type your message..." />
+      <button id="sendButton" disabled>Send</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const chatMessages = document.getElementById("chatMessages");
+      const userInput = document.getElementById("userInput");
+      const sendButton = document.getElementById("sendButton");
+
+      // Enable send button when input is not empty
+      userInput.addEventListener("input", () => {
+        sendButton.disabled = !userInput.value.trim();
+      });
+
+      function addMessage(content, sender) {
+        const message = document.createElement("div");
+        message.className = `message ${sender}`;
+        const messageContent = document.createElement("div");
+        messageContent.className = "message-content";
+        messageContent.textContent = content;
+        message.appendChild(messageContent);
+        chatMessages.appendChild(message);
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+      }
+
+      async function sendMessage() {
+        const userMessage = userInput.value.trim();
+        if (!userMessage) return;
+
+        addMessage(userMessage, "user");
+        userInput.value = "";
+        sendButton.disabled = true;
+
+        try {
+          const response = await fetch("/get", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ msg: userMessage })
+          });
+
+          if (!response.ok) throw new Error("Server error");
+
+          const botResponse = await response.text();
+          addMessage(botResponse, "bot");
+        } catch (error) {
+          addMessage("Error: Unable to connect to the chatbot server.", "bot");
+        } finally {
+          sendButton.disabled = false;
+        }
+      }
+
+      sendButton.addEventListener("click", sendMessage);
+      userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+    });
+  </script>
+</body>
+</html>
